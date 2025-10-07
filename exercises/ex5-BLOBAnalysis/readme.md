@@ -72,6 +72,7 @@ We will start by trying some BLOB analysis approaches on a photo of some Lego br
 Read the image, convert it to grayscale and use *Otsus* method to compute and apply a threshold. 
 
 Show the binary image together with the original image.
+*OBS:* Remember to make sure that your foreground class = `1` and background class = `0`.
 
 ### Exercise 2: Remove border BLOBs
 
