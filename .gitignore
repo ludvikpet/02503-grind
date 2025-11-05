@@ -1,0 +1,29 @@
+#ignore vscode configurations 
+.vscode/
+
+# Ignore all generated image outputs (from notebooks)
+max/**/src/*.png
+max/**/src/*.jpg
+max/**/src/*.jpeg
+
+# ignore script outputs
+max/**/*.png
+max/**/*.jpg
+max/**/*.jpeg
+
+
+
+# But keep reference images, data, and figures that belong to the repo
+!max/**/data/**
+!max/**/figs/**
+!max/**/figures/**
+!max/**/FigsInNotebooks/**
+
+# Keep README or other intentionally checked-in images (if any)
+!max/**/readme.md
+!max/**/README.md
+
+# Ignore notebook checkpoints
+**/.ipynb_checkpoints/
+
+
