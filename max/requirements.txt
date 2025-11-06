@@ -5,4 +5,6 @@ jupytext
 pandas
 seaborn
 scikit-learn
+opencv-python
+loguru 
 

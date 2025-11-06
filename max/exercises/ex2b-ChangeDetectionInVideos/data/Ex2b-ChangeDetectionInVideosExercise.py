@@ -37,7 +37,7 @@ def capture_from_camera_and_show_images():
         exit()
 
     # Transform image to gray scale and then to float, so we can do some processing
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #color conversion from rgb to gray 
     frame_gray = img_as_float(frame_gray)
 
     # To keep track of frames per second
