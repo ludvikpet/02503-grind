@@ -1,0 +1,10 @@
+scikit-image
+pydicom
+matplotlib
+jupytext
+pandas
+seaborn
+scikit-learn
+opencv-python
+loguru 
+

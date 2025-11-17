@@ -1,0 +1,4 @@
+notes for week 1 exercise ex1b
+
+
+Notation of covariance (Exercise 3) is confusing. Looks as if it is variance. Rather use COV(X,Y) or something else. 
