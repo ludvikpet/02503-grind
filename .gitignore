@@ -12,6 +12,7 @@ max/**/data/*.cat
 max/**/**/training_cats/
 max/**/**/training_cats_100/
 
+max/**/**/pretrained_classifiers/*.xml
 
 
 max/**/data/*.zip
