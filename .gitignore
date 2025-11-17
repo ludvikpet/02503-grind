@@ -31,6 +31,11 @@ max/**/**/data/*.tfm
 max/**/*.png
 max/**/*.jpg
 max/**/*.jpeg
+max/**/*.cat
+lud/**/*.png
+lud/**/*.jpg
+lud/**/*.jpeg
+lud/**/*.cat
 
 
 
@@ -39,12 +44,21 @@ max/**/*.jpeg
 !max/**/figs/**
 !max/**/figures/**
 !max/**/FigsInNotebooks/**
+!lud/**/data/**
+!lud/**/figs/**
+!lud/**/figures/**
+!lud/**/FigsInNotebooks/**
 
 # Keep README or other intentionally checked-in images (if any)
 !max/**/readme.md
 !max/**/README.md
+!lud/**/readme.md
+!lud/**/README.md
 
 # Ignore notebook checkpoints
 **/.ipynb_checkpoints/
 
-
+# Ignore solutions
+solutions/*
+lud/exercises/ex8-CatsCatsCats/data/*
+lud/exercises/ex8-CatsCatsCats/training_data/*

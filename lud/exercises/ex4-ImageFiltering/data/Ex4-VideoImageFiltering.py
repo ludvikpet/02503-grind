@@ -23,7 +23,9 @@ def process_gray_image(img):
     # https://scikit-image.org/docs/stable/user_guide/data_types.html#image-processing-pipeline
     """
     # Do something here:
-    proc_img = img.copy()
+    proc_img = prewitt(img)
+    T = threshold_otsu(proc_img)
+    proc_img = (proc_img > T)
     return img_as_ubyte(proc_img)
 
 
@@ -66,6 +68,12 @@ def capture_from_camera_and_show_images():
         # Change from OpenCV BGR to scikit image RGB
         new_image = new_frame[:, :, ::-1]
         new_image_gray = color.rgb2gray(new_image)
+        
+        # Employ a median filter on the gray image:
+        # new_image_gray = median(new_image_gray, np.ones(( 10,10 )) )
+            # When doing this, framerate drops to 0 basically. Shows, that the process
+            # is very computationally heavy.
+
         if process_rgb:
             proc_img = process_rgb_image(new_image)
             # convert back to OpenCV BGR to show it
