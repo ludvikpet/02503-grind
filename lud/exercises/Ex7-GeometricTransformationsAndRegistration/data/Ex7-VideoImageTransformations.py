@@ -18,7 +18,10 @@ def process_rgb_image(img, counter):
     """
     Simple processing of a color (RGB) image
     """
-    return rotate(img, counter)
+    str = math.sin(counter / 10) * 10
+    r = 300
+
+    return rotate(swirl(img, strength=str, radius=r), counter) # This is very laggy, fyi. Should only be a single transformation
 
 
 def capture_from_camera_and_show_images():
