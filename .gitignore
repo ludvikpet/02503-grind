@@ -6,6 +6,27 @@ max/**/src/*.png
 max/**/src/*.jpg
 max/**/src/*.jpeg
 
+max/**/**/data/*.jpg
+max/**/**/data/*.cat
+max/**/data/*.cat
+max/**/**/training_cats/
+max/**/**/training_cats_100/
+
+
+
+max/**/data/*.zip
+max/**/data/*.zip
+
+max/**/data/*.nii
+max/**/data/*.nii
+
+max/**/data/*.nii
+max/**/data/*.nii
+
+max/**/**/data/*.nii
+max/**/**/data/*.tfm
+
+
 # ignore script outputs
 max/**/*.png
 max/**/*.jpg
@@ -14,7 +35,7 @@ max/**/*.jpeg
 
 
 # But keep reference images, data, and figures that belong to the repo
-!max/**/data/**
+#!max/**/data/**
 !max/**/figs/**
 !max/**/figures/**
 !max/**/FigsInNotebooks/**
