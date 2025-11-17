@@ -7,4 +7,6 @@ seaborn
 scikit-learn
 opencv-python
 loguru 
+plotly=6.0.0
+imagecodecs
 

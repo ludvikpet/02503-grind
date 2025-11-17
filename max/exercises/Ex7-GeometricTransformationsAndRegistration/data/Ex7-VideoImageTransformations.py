@@ -18,7 +18,14 @@ def process_rgb_image(img, counter):
     """
     Simple processing of a color (RGB) image
     """
-    return rotate(img, counter)
+    #swirl: proc time 234 ms.. 4 FPS 
+    # strength = math.sin(counter / 10) * 10
+    # rad = 300
+    # c = [500, 400]
+    # swirl_img = swirl(img, strength=strength, radius=rad, center=c)
+    # return swirl_img 
+
+    return rotate(img, counter*180/math.pi) #time: 50 ms, way faster 
 
 
 def capture_from_camera_and_show_images():

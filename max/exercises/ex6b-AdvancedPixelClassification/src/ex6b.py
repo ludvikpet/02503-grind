@@ -77,6 +77,17 @@ ROI_WM = data['ROI_WM'].astype(bool)
 # Display both the T1 and T2 images, their 1 and 2D histograms and scatter plots.
 # Tips: Use the `plt.imshow()`, `plt.hist()`, `plt.hist2d()` and `plt.scatter()` functions
 # Add relevant title and label for each axis. One can use `plt.subplots()` to show more subfigures in the same figure. **Remove intensities from background voxels for 1D and 2D histograms.**
+
+fig, ax = plt.subplots(2,2)
+ax[0,0].imshow(ImgT1)
+ax[0,1].hist(ImgT1.ravel())
+ax[1,0].imshow(ImgT2)
+ax[1,1].hist(ImgT2.ravel())
+
+
+plt.figure()
+plt.hist2d(x=ImgT1.ravel(),y=ImgT2.ravel())
+
 #
 # ![imshow image coordinates](figs/Picture1.png)
 #
@@ -125,6 +136,7 @@ ROI_WM = data['ROI_WM'].astype(bool)
 # *Tip: Read the Bishop note on Chapter 4.*
 
 # %%
+"""
 W = LDA(X,T)
 
 # %% [markdown]
@@ -143,6 +155,7 @@ Y = np.c_[np.ones((len(Xall), 1)), Xall] @ W.T
 
 # %%
 PosteriorProb = np.clip(np.exp(Y) / np.sum(np.exp(Y),1)[:, np.newaxis], 0, 1)
+"""
 
 # %% [markdown]
 # ## Exercise 9

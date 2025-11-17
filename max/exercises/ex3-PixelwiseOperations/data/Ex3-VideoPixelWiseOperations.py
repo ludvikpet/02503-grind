@@ -20,9 +20,22 @@ def process_gray_image(img):
     # https://scikit-image.org/docs/stable/user_guide/data_types.html#image-processing-pipeline
     """
     img_float = img_as_float(img)
-    img_proc = 1 - img_float
+    img_proc = 1 - img_float #invert image, meaning light becomes dark and vice versa 
     return img_as_ubyte(img_proc)
 
+def threshold_gray_image(img, thresh = 0.5):
+    mask = img > thresh
+    return (mask * 255).astype("uint8")
+
+
+def detect_dtu_signs_hsv(img):
+    img_hsv = color.rgb2hsv(img)
+    h_comp = img_hsv[:, :, 0]
+    v_comp = img_hsv[:, :, 2]
+    
+    mask = (h_comp > 0.90) & (v_comp>=0.478) & (v_comp < 0.70) 
+
+    return (mask*255).astype("uint8") 
 
 def process_rgb_image(img):
     """
@@ -31,11 +44,11 @@ def process_rgb_image(img):
     # Copy the image information so we do not change the original image
     proc_img = img.copy()
     r_comp = proc_img[:, :, 0]
-    proc_img[:, :, 0] = 1 - r_comp
+    proc_img[:, :, 0] = 1 - r_comp #invert r channel, meaning low red before becomes high and high red before becomes low. I.e. green and blue become red, whereas red becomes dark
     return proc_img
 
 
-def capture_from_camera_and_show_images():
+def capture_from_camera_and_show_images(process_rgb=False, thresh=False, detect_dtu = False):
     print("Starting image capture")
 
     print("Opening connection to camera")
@@ -53,7 +66,8 @@ def capture_from_camera_and_show_images():
     old_time = time.perf_counter()
     fps = 0
     stop = False
-    process_rgb = False
+    font = cv2.FONT_HERSHEY_COMPLEX
+    threshval = 0.5
     while not stop:
         ret, new_frame = cap.read()
         if not ret:
@@ -62,13 +76,18 @@ def capture_from_camera_and_show_images():
 
         # Change from OpenCV BGR to scikit image RGB
         new_image = new_frame[:, :, ::-1]
-        new_image_gray = color.rgb2gray(new_image)
+        new_image_gray = color.rgb2gray(new_image) #this is float
         if process_rgb:
             proc_img = process_rgb_image(new_image)
             # convert back to OpenCV BGR to show it
             proc_img = proc_img[:, :, ::-1]
+        elif thresh:
+            proc_img = threshold_gray_image(new_image_gray,threshval)
+            cv2.putText(proc_img, f"{threshval:.2f}", (100, 100), font, 1, 255, 1)
+        elif detect_dtu: 
+            proc_img = detect_dtu_signs_hsv(new_image)
         else:
-            proc_img = process_gray_image(new_image_gray)
+            proc_img = process_gray_image(new_image_gray) 
 
         # update FPS - but do it slowly to avoid fast changing number
         new_time = time.perf_counter()
@@ -78,7 +97,6 @@ def capture_from_camera_and_show_images():
 
         # Put the FPS on the new_frame
         str_out = f"fps: {int(fps)}"
-        font = cv2.FONT_HERSHEY_COMPLEX
         cv2.putText(new_frame, str_out, (100, 100), font, 1, 255, 1)
 
         # Display the resulting frame
@@ -86,8 +104,18 @@ def capture_from_camera_and_show_images():
         show_in_moved_window('Input gray', new_image_gray, 600, 10)
         show_in_moved_window('Processed image', proc_img, 1200, 10)
 
-        if cv2.waitKey(1) == ord('q'):
+        key = cv2.waitKey(1)
+
+        if key == ord('q'):
             stop = True
+        if key == ord("j"):
+            threshval -= 0.05
+        if key == ord("k"):
+            threshval += 0.05
+        
+
+
+        
 
     print("Stopping image loop")
     cap.release()
@@ -95,4 +123,4 @@ def capture_from_camera_and_show_images():
 
 
 if __name__ == '__main__':
-    capture_from_camera_and_show_images()
+    capture_from_camera_and_show_images(detect_dtu = True)

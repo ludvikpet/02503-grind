@@ -16,6 +16,10 @@ def show_in_moved_window(win_name, img, x, y):
     cv2.moveWindow(win_name, x, y)
     cv2.imshow(win_name, img)
 
+def prewitt_filter(img):
+    proc_img = img.copy()
+    proc_img = prewitt(proc_img)
+    return img_as_ubyte(proc_img)
 
 def process_gray_image(img):
     """
@@ -23,19 +27,28 @@ def process_gray_image(img):
     # https://scikit-image.org/docs/stable/user_guide/data_types.html#image-processing-pipeline
     """
     # Do something here:
-    proc_img = img.copy()
-    return img_as_ubyte(proc_img)
+    proc_img = prewitt_filter(img)
+    theta = threshold_otsu(proc_img)
+    return threshold_image(proc_img,theta)
 
-
-def process_rgb_image(img):
+    
+def threshold_image(img_in, thres: int):
     """
-    Simple processing of a color (RGB) image
+    Apply a threshold in an image and return the resulting image
+    :param img_in: Input image
+    :param thres: The treshold value in the range [0, 255]
+    :return: Resulting image (unsigned byte) where background is 0 and foreground is 255
     """
-    # Copy the image information so we do not change the original image
-    proc_img = img.copy()
-    r_comp = proc_img[:, :, 0]
-    proc_img[:, :, 0] = 1 - r_comp
-    return proc_img
+    img_in = img_as_ubyte(img_in)
+    if isinstance(thres,float):
+        print(f"Received float threshold {thres}, converted to nearest int: {int(thres*255)}")
+        thres = int(thres*255)
+    mask = img_in>thres
+    img_out = img_in.copy()
+    img_out[mask] = 255
+    img_out[~mask] = 0
+    return img_as_ubyte(img_out) 
+    
 
 
 def capture_from_camera_and_show_images():
