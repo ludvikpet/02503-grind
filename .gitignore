@@ -13,6 +13,12 @@ max/**/**/training_cats/
 max/**/**/training_cats_100/
 
 max/**/**/pretrained_classifiers/*.xml
+!max/**/**/pretrained_classifiers/.gitkeep
+max/**/**/frame_data
+max/**/**/frame_data_left_right
+
+
+
 
 
 max/**/data/*.zip
