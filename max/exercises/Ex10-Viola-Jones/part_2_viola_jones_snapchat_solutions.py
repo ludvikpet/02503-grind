@@ -241,7 +241,7 @@ if __name__=="__main__":
     
     #set loop parameters
     n_frames = 0
-    ROTATE = False #set to true if we want to rotate the object of interest with an angle 
+    ROTATE = True #set to true if we want to rotate the object of interest with an angle 
     SMOOTHEN = True 
     stop = False
     N_eyes = 0
@@ -321,7 +321,7 @@ if __name__=="__main__":
                         """ 
                         theta = np.arctan2(-vec[1],vec[0]) #is in radians
                         theta *= 180/np.pi 
-                        object_im_trf, anchor_point_new, dx, dy = rotate_object(object_im_trf, theta, anchor_point, allow_resize=True) #get the corresponding anchor point after applying rotation
+                        object_im_trf, anchor_point_new, dx, dy = rotate_object(object_im_trf, theta, anchor_point, allow_resize=False) #get the corresponding anchor point after applying rotation
                         #TODO: somehow anchor_point_new needs to be part of the transform when allow_resize=True, but it seems okay-ish
                         anchor_point[0] = anchor_point[0] - dy 
                         anchor_point[1] = anchor_point[1] - dx 
