@@ -37,6 +37,10 @@ lud/**/*.png
 lud/**/*.jpg
 lud/**/*.jpeg
 lud/**/*.cat
+datasets/**/*.png
+datasets/**/*.jpg
+datasets/**/*.jpeg
+datasets/**/*.mp4
 
 
 
@@ -63,3 +67,6 @@ lud/**/*.cat
 solutions/*
 lud/exercises/ex8-CatsCatsCats/data/*
 lud/exercises/ex8-CatsCatsCats/training_data/*
+
+datasets/caltech-101/*
+datasets/annotated_dir/*
