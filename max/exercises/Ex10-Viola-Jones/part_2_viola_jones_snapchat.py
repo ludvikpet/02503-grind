@@ -5,7 +5,9 @@ import time
 import numpy as np 
 from skimage.transform import rotate, rescale
 
-from typing import Tuple
+"""
+An adapted version of https://docs.opencv.org/3.4/db/d28/tutorial_cascade_classifier.html
+"""
 
 def connect_camera(use_droid_cam: bool = False) -> cv2.VideoCapture:
     """
@@ -155,14 +157,14 @@ def time_smoothen_detections(arr_new: np.ndarray | float, arr_ref: np.ndarray | 
 
 def rotate_object(object_im: np.ndarray, angle: float, anchor_point: tuple, allow_resize: bool = False) -> Tuple[np.ndarray,np.ndarray,int,int] | Tuple[np.ndarray,np.ndarray]:
     """
-    Rotates an image using skimage.transforms.rotate. 
+    Rotates an image using skimage.transforms.rotate around the anchor_point. 
     Finds the corresponding location of the anchor point in the rotated image frame. 
     Returns the difference in image size before and after rotation, dx and dy.  
     
     Args:
         object_im (np.ndarray): the object image to be rotated, (H, W, C)
         angle (float): rotation angle in counter-clockwise direction in degrees. 
-        anchor_point (tuple): the centre in object image used rotation. A good idea is to use bottom centre 
+        anchor_point (tuple): the centre in object image used rotation. For this implementation, use the bottom centre. 
 
     Returns:
         Tuple[np.ndarray,np.ndarray,int,int] 
@@ -181,8 +183,7 @@ def rotate_object(object_im: np.ndarray, angle: float, anchor_point: tuple, allo
     delta_width = w-object_im.shape[1]
     delta_height = h-object_im.shape[0]
     
-    return object_im, new_anchor, delta_width, delta_height 
-    
+    return object_im, new_anchor, delta_width, delta_height     
     
 def rescale_object(object_im: np.ndarray, face_width: int) -> np.ndarray: 
     """

@@ -3,6 +3,10 @@ from typing import Tuple
 import time
 import cv2
 
+"""
+An adapted version of https://docs.opencv.org/3.4/db/d28/tutorial_cascade_classifier.html
+"""
+
 def connect_camera(use_droid_cam: bool = False) -> cv2.VideoCapture:
     """
     Attempts to connect to the webcam. 
@@ -46,9 +50,9 @@ def load_cascades(cascade_directory: str) -> Tuple[cv2.CascadeClassifier, cv2.Ca
     face_cascade = cv2.CascadeClassifier() #initialize a classifier instance
     eyes_cascade = cv2.CascadeClassifier()
     
-    face_cascade_name = pretrained_dir + "/haarcascade_frontalface_default.xml"
+    face_cascade_name = cascade_directory + "/haarcascade_frontalface_default.xml"
     #eyes_cascade_name = pretrained_dir + "/haarcascade_eye.xml" #specify which classifiers to load
-    eyes_cascade_name = pretrained_dir + "/haarcascade_eye_tree_eyeglasses.xml" #more robust to lighting and glasses
+    eyes_cascade_name = cascade_directory + "/haarcascade_eye_tree_eyeglasses.xml" #more robust to lighting and glasses
     
     
     if not face_cascade.load(cv2.samples.findFile(face_cascade_name)):

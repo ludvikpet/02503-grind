@@ -3,12 +3,44 @@
 
 ## Introduction
 ---
-In this exercise, we take a look at the use case of the widely deployed Viola-Jones algorithm - a method that enables real-time face detection. Object detection is a core problem within computer vision, and with its introduction in 2001, Viola Jones became the first face detection algorithm used in real-time. Even for its ancient beginnings, it is still applicable today due to its relatively high accuracy performance in conjunction with its low compute requirement, which is still competitive with much later frameworks such as YOLO v3. The algorithm has later been integrated within large applications such as *Snapchat*, which use the framework within their popular *Snapchat Lenses* widget. Later on, we'll explore how face detection can be adopted for such uses. Similarly we'll show, that the algorithm can be adapted to detect other object classes.
+In this exercise, we take a look at the use case of the widely deployed Viola-Jones algorithm - a method that enables real-time face detection. Object detection is a core problem within computer vision, and with its introduction in 2001, Viola Jones became the first face detection algorithm used in real-time. Even though the algorithm is over 20 years old, it is still applicable today due to its relatively high accuracy performance in conjunction with its low compute requirement, which is still competitive with much later frameworks such as YOLO v3. The algorithm has later been integrated within large applications such as *Snapchat*, which use the framework within their popular *Snapchat Lenses* widget. Later on, we'll explore how face detection can be adopted for such uses. Similarly we'll show, that the algorithm can be adapted to detect other object classes.
 
 ![[Pasted image 20251118110131.png|600]]
 
-In OpenCV, the task of Viola-Jones-style object detection is referred to as cascade classification. We will use the two terms interchangeably, although there are a few differences as compared to the original Viola-Jones paper. Disregarding details, from an intuitive standpoint, the two approaches are almost the same.
+## OpenCV vs. Viola-Jones
+---
+In OpenCV, the task of Viola-Jones-style object detection is referred to as cascade classification. We will use the two terms interchangeably, although there are a few differences in implementation as compared to the original Viola-Jones paper, the most important explained below. We advise you to just proceed to the exercises, and if you're confused about what OpenCV actually does, you can refer back to this section.
 
+### Scanning the detector across multiple scales
+Viola-Jones: multiple feature scales are achieved by evaluating the feature windows at different scales, i.e. directly changing the size of the window-size per detector-cascade at inference. If two window scales are used, same trained cascade is evaluated twice, once with a window size of 24x24, once with a window size of 30 x 30. This was practical back in the day, as this meant only a single integral image had to be computed per image. This can be considered a pyramid of windows, and makes detection hard for images of varying sizes. How do we ensure that the image dimensions are evenly divisible by all window scales? 
+
+OpenCV: In order to make the approach more flexible, OpenCV uses an arbitrary scale factor instead. If one were to build a window pyramid with such an approach, window corner coordinates could be placed in non-integer coordinates. For the classification, Haar features require integer-aligned rectangles. Simply clamping to an integer misaligns the Haar features, making detection unreliable. As a result, openCV instead creates an image-pyramid at k levels while keeping the window size fixed: 
+```
+Level 0: input_image (H x W x C) -> calculate integral image
+Level 1: resize(input_image,1/scale_factor) (H/scale_factor x W/scale_factor x C) -> calculate integral image
+Level 2: resize(input_image,1/(scale_factor^2)) (H/(scale_factor^2) x W/(scale_factor^2) x C) -> calculate integral image
+... (repeat)
+Stop right before resized_im.shape < window.shape
+```
+
+At each level, the same fixed-size cascade window is scanned. Modern hardware makes repeated rescaling cheap, so this method remains efficient.
+
+### Integration of multiple detections
+Viola-Jones: detections with overlaps are grouped into sets. For each set, the final detection is the mean of the box coordinates.
+
+OpenCV: 
+penCV uses a similar but more elaborate grouping procedure:
+
+1. Rectangles are clustered using a similarity measure (based on position/size differences).
+
+2. Each cluster is averaged to produce a single rectangle.
+
+3. Only clusters with more members than minNeighbors are kept.
+This ensures a detection must appear consistently across scales and positions.
+
+4. OpenCV additionally removes small averaged rectangles that lie inside larger, stronger clusters.
+
+OpenCV also supports optional “reject-level” weights for more advanced cascades, but these are not used in standard Haar detection.
 
 ## Exercises outline
 ---
@@ -47,7 +79,7 @@ Now run the script and try moving a bit around in front of the webcam, e.g. by r
 ### Exercise 2: Counting the number of detections
 Implement functionality to count the number of faces and eyes detected. This should be based on the output of the detectMultiScale function calls, i.e. the variables faces and eyes. Print the number of eyes and faces detected into the text which already measures the frames per second. Ensure that it works correctly when multiple faces with eyes are detected.    
 
-*Hint: In order to figure out what the function returns, try to write print(faces) when a face is detected vs when you put a finger in front of the webcam. Is the return type consistent in the two cases?*
+*Hint: In order to figure out what the function returns, try to write print(type(faces)) when a face is detected vs when you put a finger in front of the webcam. Is the return type consistent in the two cases?*
  
 *Hint2: len() both works both for numpy arrays and python lists and tuples.*
 
@@ -62,18 +94,29 @@ You could of course also implement these changes into the face detection, the qu
 
 ## Part 2: Snapchat-like object filters 
 ---
-We've already seen that we can detect eyes and faces somewhat robustly. Now, we will use this knowledge to make a Snapchat-like filter, where an object is placed on an image (the webcam feed) on an anchor-point (e.g. the top of the head). The goal is, that the object should track the anchor-point on the head through successive frames. 
+We've already seen that we can detect eyes and faces somewhat robustly. Now, we will use this knowledge to make a Snapchat-like filter, where an object is placed on an image (the webcam feed) on an anchor-point (e.g. the top of the head). The goal is, that the object should track the anchor-point on the head through successive frames while being transformed to fit the head appropriately. Our approach will be based on using cascaded detection for identifying simple facial landmarks. 
 
+<b> A small motivation </b>
 
-In order to achieve this, we will need to be able to load an image with either a transparent background (RGBA-image), or alternatively load an image which we can make a mask for which could achieve the same end.
+Interestingly, this approach is reminiscent of a patent registered by Snap Inc in 2016, titled "[Method for real time video processing for changing proportions of an object in the video](https://patents.google.com/patent/US20150221118A1/en)". Claim 9 states: 
+- *9. The computer implemented method of claim 1, wherein the detecting of the object in the video is implemented with the use of Viola-Jones method.*
+- *10.  The computer implemented method of claim 1, wherein the detecting of the object's feature points is implemented with the use of an Active Shape Model (ASM)."*
+
+The ASM-part is closely related to week 12. Presumably, Viola Jones is used to quickly detect where faces are located in the frame, on the basis of which the Active Shape Model is fitted for identifying feature points (landmarks). 
+
+In this exercise, we will instead infer feature points from geometry which can be extracted using cascaded classification alone.  
+ 
 
 ### Exercise 4: loading an RGBA image
+In order to implement the desired effect, we will need to be able to load an image with either a transparent background (RGBA-image), or alternatively use masking approaches.
+
 Open the file *part_2_viola_jones_snapchat.py*. Finish the function *load_png_object* and use it to load the hat object which has the path *image_props/hat_rescaled.png. pass the flag cv2.IMREAD_UNCHANGED, which forces openCV to load the image using an alpha-channel. Return the image and the image shape. Test that the shape is as you expect.
 
 **Question 3**: *How can you interpret the alpha-channel?*
 
 ### Exercise 5: Eye-centre landmark registration 
-For the approach we will use for visualizing the hat on top of the head, we will use a simplified landmark-based approach. In order to place the hat correctly, we will need to infer three landmarks: **1)** the centre coordinate of the top of the detected face, **2)** the centre coordinate of the left eye detection and **3)** the centre coordinate of the right eye detection. 
+For the approach we will use for visualizing the hat on top of the head, we will use a simplified landmark-based approach.  
+In order to place the hat correctly, we will need to infer three landmarks: **1)** the centre coordinate of the top of the detected face, **2)** the centre coordinate of the left eye detection and **3)** the centre coordinate of the right eye detection. 
 For each detected face and pair of eyes, we will need to save these coordinates.
 
 All quantities we need to infer the landmarks are defined in the following loop:
@@ -98,12 +141,12 @@ for i, (x,y,w,h) in enumerate(faces):
 ```
 
 First, we will start by registering the left and right eye centre coordinates.
-If we work from a simplified assumption that the right eye will be located to the right of the left eye, we can identify the centre coordinates based on the contents of  eye_coord_arr. 
+If we work from a simplified assumption that the right eye will be located to the right of the left eye, we can identify the centre coordinates based on the contents of eye_coord_arr. 
 
-Your task is to finish the function *assign_eyes* which should output the left and right eye centre coordinates as np.arrays.
+Your task is to finish the function *assign_eyes* which should output the left and right eye centre coordinates as numpy arrays.
 
 ### Exercise 6: Constructing a normal vector for finding the top of the face 
-Now, based on the left and right eye centre coordinates, we want to identify the top of the head. This can examplewise be done by finding a vector which always points upwards in the face coordinate system. This can be achieved by first finding the vector which goes from the left eye to the right eye, and followingly finding its normalized normal vector. 
+Now, based on the left and right eye centre coordinates, we want to identify the top of the head. This can examplewise be done by finding a vector which always points upwards in the face coordinate system. To do so, we first calculate the vector which goes from the left eye to the right eye, and followingly infer its normalized normal vector. 
 
 
 Your task is to: 
@@ -113,7 +156,8 @@ Your task is to:
    
 The normalizing factor can be found by using np.linalg.norm(n_vec).
 
-**Note**: in some cases, the CascadeClassifier registers multiple eye instances in the same eye. In this case, the norm will be zero, and normalization will yield an error. As a result, we will in this case not proceed further with calculating the normalized normal vector.
+**Note**: in some cases, the CascadeClassifier registers multiple eye instances in the same eye. In this case, the norm will be zero, and normalization will yield an error. As a result, we will in this case not proceed further with calculating the normalized normal vector or inferring where to place the hat. Instead we fall-back to the last hat placement, if possible. 
+You could tune the algorithm or filter outputs such that same-detections are not possible. 
 
 ### Exercise 7: Identifying the coordinate at the top-middle of the face
 If we from the centre coordinate of the face go along the normal vector along the length $\frac{h}{2}$, where $h$ is the height of the face, we should reach the top coordinate of the face. This will yield our third landmark. 
@@ -153,14 +197,14 @@ define at which global coordinate the hat image (0,0) should be located.
 Based on our normal-vector, we can even calculate the corresponding angle the hat should be rotated to follow the face rotation. The angle of rotation is measured in counter-clockwise direction compared to the horizontal axis, and as such can be calculated using the normal-vector. 
 
 Set the boolean *ROTATE* flag as True and implement the calculation of the rotation angle. Store the result in *theta*, and ensure it is in degrees. 
-The *rotate_object* function rotates the object using the *anchor_point* as rotation centre with the *skimage.transform.rotate* function we've worked with before. Use the center bottom point of the object image as the centre coordinate, i.e.: 
+The *rotate_object* function rotates the object using the anchor point as rotation centre with the *skimage.transform.rotate* function we've worked with before. For the anchor point for alignment, use the center bottom point of the object image:
 ```python
 anchor_point = np.array([object_im_trf.shape[0]-1,object_im_trf.shape[1]//2])
 ```
 
 The function outputs the position of the rotation-centre post transformation aswell. 
 
-**Note**: For larger rotation angles the object will become cropped. If you set the flag allow_resize=True, the rotated object image is resized such that no information is lost. This adds a layer of complexity, as we in this case need to correct for the resizing of the object as well. This is handled by the variables dy and dx
+**Note**: For larger rotation angles the object will become cropped. If you set the flag allow_resize=True, the rotated object image is resized such that no information is lost. This adds a layer of complexity, as we in this case need to correct for the resizing of the object as well, which is possible but makes the task harder. 
 
 
 ### Exercise 11: Speeding things up (Optional)
@@ -178,21 +222,11 @@ You can try any of these optimizations (there exist more than these), and see if
 In some lighting conditions, the hat placement is still very unrobust, and eye-detection may still be faulty. Try to tune the max and min-size of face and eye detections. In addition, you could build in "memory" of earlier rotation angles theta and the end_point_hat_y and end_point_hat_x positions. Hint: consider equation 4 from the video-change-detection note. Finish the time_smoothen_detections function and add smoothing support. Does your result improve? 
 Consider the reason why we calculate the smoothing only on the end-points and angle, and not on the intermediary quantities. 
 
-
-
-#STILL TODOS: 
-- part_2: when ROTATE and allow_resize=True, the transformation still is not completely correct. Would be nice for the students to have a correct transform. 
-  - It is mainly an issue when rotation angle is negative. Det er ikke helt "så hatten passer"!
-- part_2: implement smoothing in solutions. 
-- part_2: add more comments / documentation on insert_hat_on_frame function
-- part_2: add more objects for students to try
-- part_2: add sources for data files in .txt 
-
 ## Part 3: Cascade Classifier used for object detection
 ---
-In the following exercises, we'll investigate the performance of the Viola-Jones algorithm when trained to detect non-faces. To do this, we've trained a stop-sign object detector, which we'll use in the following exercises. Later on, you'll be able to try such a model yourselves (optional). We'll show, that the framework doesn't necessarily need to be used for faces, but that it is instead a general object detection tool which can be trained to solve any object detection problem.
+In the following exercises, we'll investigate the performance of the Viola-Jones algorithm when trained to detect other classes than faces. To do this, we've trained a stop-sign object detector, which we'll use in the following exercises. Later on, you'll be able to try such a model yourselves (optional). We'll show, that the framework doesn't necessarily need to be used for faces, but that it is instead a general object detection tool which can be trained to solve many object detection problems.
 
-We'll start by employing a pretrained stop-sign object detector for image capture. To do this, we'll use the script **VJ_performance_eval.py**. You can find all the scripts and data we'll need [here](linkidinky.com). Download the folder and *cd* into it.
+We'll start by employing a pretrained stop-sign object detector for image capture. To do this, we'll use the script **VJ_performance_eval.py**. You can find all the scripts and data we'll need [here](linkidinky.com). Download the folder and *cd* (change directory) into it.
 ### Exercise 13: Testing stop-sign model performance
 We'll first investigate how the model performs on a simple image of a stop sign. in the **data** folder, the image *stop_sign.jpg* can be found. First, try to visualize the image. We may evaluate the model performance using the beforementioned *VJ_performance_eval.py* script and running the following command in your terminal:
 
@@ -201,12 +235,13 @@ python VJ_performance_eval.py --model stop_sign_detector.xml --input stop_sign.j
 ```
 
 **Question 4**: *Does the model perform as expected?*
+
 **Question 5**: *Inspect the script contents and check how the model configures its bounding box shape. Now try to print the values. Specify the top left and bottom right points of the bounding box frame.*
 
 ### Exercise 14: Haar feature extraction (Still very much a TODO)
 In order to understand the underlying decision logic that the model makes during execution, we'll take a look at the computed Haar features of the model at different stages. Refer to the directory **haar_features** to get insights into what the model has learned to put attention towards at different stages.
 
-**Question 6**: *Looking at some of the computed haar features, can you tell what the model attends to at the different classification stages?*
+**Question 6**: *Looking at some of the computed haar features in early layers of the cascade, can you tell what types of features in the image are important at the different classification stages? If you're in doubt, you can get inspiration from the Viola-Jones paper Fig. 3*
 
 Now choose a specific feature image that you find interesting. We'd now like to investigate what the model computes at this stage.
 
@@ -219,7 +254,7 @@ Now choose a specific feature image that you find interesting. We'd now like to 
 ### Exercise 15: Video stream object detection
 Now we'd like to look at the performance of the stop sign detector when tasked with a moving image, to see whether it is robust to real-time image changes, such as object scaling and pose adjustments. Again run the file *VJ_performance_eval.py*, now using the videos **van_video.mp4** and **scale_diff.mp4** as image capture input. Remember to change the type of input to video format.
 
-**Question 10**: *How does the model perform? Can you find any weaknesses that it possesses?*
+**Question 10**: *How does the model perform? Can you identify any weaknesses?*
 
 During detection, the model computes features based on a series of scaled image sizes, forming a pyramid of images. OpenCV allows us to modify this pyramid through their detection framework.
 
@@ -246,7 +281,8 @@ conda activate obj_train
 ```
 
 ### Exercise 17: Preprocess data (Optional)
-In order for our data to fit to the semantic notation needed for the OpenCV training tools, we first need to perform some pre-processing on our annotations. To do so, you need to choose **1)** a *positive* class, denoting the class you want your model to identify; and **2)** a *negative* class, denoting a mock class intended to act as a model *regularizer*, meaning that we try to nudge our model to learn relevant features instead of erroneous features. In the case of the stop-sign model, the chosen positive class was *stop_sign* and the negative class was *car_side*.
+In order for our data to fit to the semantic notation needed for the OpenCV training tools, we first need to perform some pre-processing on our annotations. To do so, you need to choose **1)** a *positive* class, denoting the class you want your model to detect; and **2)** a set of *negative* images, where the positive class is not present. In the case of the stop-sign model, the chosen positive class was *stop_sign* and the negative images are found using images containing the class *car_side*, as we expect these types of images to be somewhat reminiscent. 
+
 
 Run the following command when at the root of the **process_dataset.py** script:
 
@@ -256,7 +292,9 @@ python process_dataset.py --pos <pos_class> --neg <neg_class>
 
 With *pos_class* and *neg_class* being the explicit names of the categories in the Caltech-101 dataset.
 
-Having ran this script, the description files *pos_class_pos.dat* and *pos_class_neg.dat* should be contained in the Caltech-101 folder along with their gray-scaled datasets in the folders **pos_class_gray** and **neg_class_gray**.
+Having run this script, the description files *pos_class_pos.dat* and *pos_class_neg.dat* should be contained in the Caltech-101 folder along with their gray-scaled datasets in the folders **pos_class_gray** and **neg_class_gray**.
+
+<span style="color:red">Names of .dat files indicate that bounding boxes are actually used?</span>
 
 ### Exercise 18: Train object detector (Optional)
 Now we'll commence the training portion of the exercise! To start with, *cd* into the Caltech-101 folder, as the following OpenCV tools only work from the folder where the data resides. We need to create a *positive vector file*, which provides the path from the positive images to the positive description file. This can be done as follows:
@@ -277,7 +315,18 @@ Here, the width and height arguments are the same that you used in the last comm
 
 After running the above, you should have a working Viola Jones object detection model! The model is named *cascade.xml* and is located in the folder **my_detector**.
 
-Now, you're able to evaluate the performance of your own detector! Try to retrieve some images and videos from e.g. [Google.com](https://www.google.com/) or [Pexels.com](https://www.pexels.com/) and run the model evaluation script to see if it performs up to standard, or whether extra data is necessary to remedy model failures.
+Now, you're able to evaluate the performance of your own detector! Try to retrieve some images and videos from e.g. [Google.com](https://www.google.com/) or [Pexels.com](https://www.pexels.com/) and run the model evaluation script to see if it performs well, even when trained on so little data.
+
+## Exercise 19: Fusing multiple detections (Optional) 
+---
+In this exercise, we will showcase how multiple bounding boxes are fused as according to the Viola Jones paper, page 7. Open script ex_19_bounding_box_fusing.py. Here, we have an image with three example detections. 
+
+The script shows a pipeline which visualizes all detections before fusing bounding boxes. Followingly it checks for each bounding box whether it overlaps with another bounding box. In reality, more than two bounding boxes could overlap, but we will just work with this simple case. 
+
+Your task is to:
+1.  Implement the overlap-detection function to check whether two bounding boxes overlap. The function should return True if bounding boxes overlap, else False. 
+2.  Implement the missing line which calculates the mean bounding box   
+
 
 # References
 ---
@@ -287,6 +336,10 @@ Now, you're able to evaluate the performance of your own detector! Try to retrie
 
 [Study on the strength and limitations of the Viola-Jones algorithm](https://www.researchgate.net/publication/367584143_evaluation_study_of_face_detection_by_Viola-Jones_algorithm)
 
+[Snap Inc patent](https://patents.google.com/patent/US20150221118A1/en)
+
+[Cascade classifier openCV tutorial](https://docs.opencv.org/3.4/db/d28/tutorial_cascade_classifier.html)
+ 
 
 
 
@@ -294,3 +347,13 @@ Now, you're able to evaluate the performance of your own detector! Try to retrie
 
 
     
+
+
+# STILL TODOS: 
+- part_2: when ROTATE and allow_resize=True, the transformation still is not completely correct. Would be nice for the students to have a correct transform. 
+  - It is mainly an issue when rotation angle is negative. Det er ikke helt "så hatten passer"!
+- part_2: implement smoothing in solutions. 
+- part_2: add more comments / documentation on insert_hat_on_frame function
+- part_2: add more objects for students to try
+- part_2: add sources for data files in .txt 
+- 
