@@ -5,7 +5,8 @@
 ---
 In this exercise, we take a look at the use case of the widely deployed Viola-Jones algorithm - a method that enables real-time face detection. Object detection is a core problem within computer vision, and with its introduction in 2001, Viola Jones became the first face detection algorithm used in real-time. Even though the algorithm is over 20 years old, it is still applicable today due to its relatively high accuracy performance in conjunction with its low compute requirement, which is still competitive with much later frameworks such as YOLO v3. The algorithm has later been integrated within large applications such as *Snapchat*, which use the framework within their popular *Snapchat Lenses* widget. Later on, we'll explore how face detection can be adopted for such uses. Similarly we'll show, that the algorithm can be adapted to detect other object classes.
 
-![[Pasted image 20251118110131.png|600]]
+![[viola_jones_face_detection.png]]
+Figure retrieved from the [Viola Jones paper](https://ieeexplore.ieee.org/document/990517).
 
 ## OpenCV vs. Viola-Jones
 ---
@@ -46,7 +47,9 @@ OpenCV also supports optional “reject-level” weights for more advanced casca
 ---
 - In part 1 you will gain familiarity with some pretrained Viola-Jones type detectors provided by OpenCV and learn how to use them
 - In part 2 you will build a Snapchat-inspired object-tracking filter for pasting an object onto a face
-- In part 3 you will work on intuitively interpreting the building blocks of Viola-Jones, namely the Haar-features, and relate the scale-parameter to the detection quality. You are also given the opportunity to optionally train your own classifier.
+- In part 3 you will work on intuitively interpreting the building blocks of Viola-Jones, namely the Haar-features, and relate the scale-parameter to the detection quality.
+- In part 4 you will extract the value of a chosen Haar feature, gaining an understanding of the underlying mechanism of Viola Jones feature extraction.
+- In part 5 you'll be given the opportunity to train your own classifier. This, however, is only **optional**.
 
 ## Learning goals (not finished, still to be checked)
 ---
@@ -238,35 +241,72 @@ python VJ_performance_eval.py --model stop_sign_detector.xml --input stop_sign.j
 
 **Question 5**: *Inspect the script contents and check how the model configures its bounding box shape. Now try to print the values. Specify the top left and bottom right points of the bounding box frame.*
 
-### Exercise 14: Haar feature extraction (Still very much a TODO)
-In order to understand the underlying decision logic that the model makes during execution, we'll take a look at the computed Haar features of the model at different stages. Refer to the directory **haar_features** to get insights into what the model has learned to put attention towards at different stages.
+### Exercise 14: Visual inspection of Haar features
+In order to understand the underlying decision logic that the model makes during execution, we'll take a closer look at the computed Haar features that the model accepts during evaluation. Refer to the directory **haar_features** to get insights into what the model has learned to put attention towards at different stages when given the sample image as input.
 
-**Question 6**: *Looking at some of the computed haar features in early layers of the cascade, can you tell what types of features in the image are important at the different classification stages? If you're in doubt, you can get inspiration from the Viola-Jones paper Fig. 3*
-
-Now choose a specific feature image that you find interesting. We'd now like to investigate what the model computes at this stage.
-
-**Question 7**: *Load image and find ROI slice*
-
-**Question 8**: *Visualize 24x24 matrix. Can you extract any information from the matrix?*
-
-**Question 9**: *Compute the Integral Image from ROI (0,0). From the integral image, compute the output of the chosen haar feature.*
+**Question 6**: *Looking at some of the computed haar features, can you tell what the model attends to at the different classification stages?*
 
 ### Exercise 15: Video stream object detection
 Now we'd like to look at the performance of the stop sign detector when tasked with a moving image, to see whether it is robust to real-time image changes, such as object scaling and pose adjustments. Again run the file *VJ_performance_eval.py*, now using the videos **van_video.mp4** and **scale_diff.mp4** as image capture input. Remember to change the type of input to video format.
 
-**Question 10**: *How does the model perform? Can you identify any weaknesses?*
+**Question 7**: *How does the model perform? Can you identify any weaknesses?*
 
 During detection, the model computes features based on a series of scaled image sizes, forming a pyramid of images. OpenCV allows us to modify this pyramid through their detection framework.
 
-**Question 11**: *Examine the script file and try to modify the scale_factor parameter of the detection function. Explain the effects of increasing and decreasing the scale factor.*
+**Question 8**: *Examine the script file and try to modify the scale_factor parameter of the detection function. Explain the effects of increasing and decreasing the scale factor.*
 
-## Training an object detector (Optional)
+## Exercise 16: Fusing multiple detections (Optional) 
+---
+In the previous exercise, we saw, that there are some inconsistencies with the implementation of the Cascade Classifier wrt. Viola Jones. Particularly, we observe that bounding boxes overlap when using a small scale factor. In this exercise, we will tackle this inconsistency and showcase how multiple bounding boxes are fused as according to the Viola Jones paper, page 7. Open script *ex_16_bounding_box_fusing.py*. Here, we have an image with three example detections. 
+
+The script shows a pipeline which visualizes all detections before fusing bounding boxes. Followingly it checks for each bounding box whether it overlaps with another bounding box. In reality, more than two bounding boxes could overlap, but we will just work with this simple case. 
+
+Your task is to:
+1.  Implement the overlap-detection function to check whether two bounding boxes overlap. The function should return True if bounding boxes overlap, else False. 
+2.  Implement the missing line which calculates the mean bounding box   
+
+## Part 4: Haar feature diagnostics
+---
+We'd now like to take a deeper look at what the model actually sees when computing a Haar feature. Again, we'll refer to the **haar_features** directory - choose a cascade classifier/Haar feature that you find interesting from one of the stages within the directory. You'll use this image throughout this section.
+
+### Exercise 17: Loading and resizing image (Probably should be removed)
+Given the chosen Haar feature, slice the image by removing the other stage features, and resize it to 24x24. Now visualize the resized image along with the image *annotation_img.jpg*, which is the original reference image.
+
+Visualization of the cascade classifiers/Haar regions was made using OpenCV2's CLI tool *opencv_visualisation*. This tool has some limitations, namely, the input image has to be of shape $(w_{window}, h_{window})$, yet the output image is upscaled x10. Upscaling adds some artifacts to the image (e.g. a decrease in contrast), but above all, it necessitating a resizing for our task, as we need to refer to a reference image. Our attention will therefore be on the resized- and reference image.
+
+For later use, remember to grayscale the reference image.
+
+**Note:** *If you want to visualize cascade classifiers on your own image annotation, look at the documentation of the beforementioned function [here](https://docs.opencv.org/3.4/dc/d88/tutorial_traincascade.html).*
+
+### Exercise 18: Identify ROI pixels
+Having resized our image, we now want to slice our *reference* image such, that we only tend to the pixels that are contained within the chosen haar feature. Find these pixels on your resized image and slice the reference image accordingly.
+
+*Hint: Histograms could be a valuable asset.*
+
+### Exercise 19: Compute the integral image of image slice
+Having found the ROI, compute the integral image over the image slice. Visualize the integral image along with the original image slice.
+
+*Hint: The functions numpy.cumsum or cv2.integral may be of use.*
+
+**Note**: *It is important that the boundary of your integral image goes beyond the ROI by at least 1 pixel in all directions. cv2.integral fixes this for you by zero-padding the boundary, but keep this in mind when using numpy.cumsum.*
+
+### Exercise 20: Compute the Haar feature
+Now, compute your Haar feature. To do so, extract the haar corners of each Haar region and compute their individual Haar sum. Finally, compute:
+
+$$H = [\text{Sum of regions with white pixels}] - [\text{Sum of regions with black pixels}]$$
+
+To retrieve the Haar feature. The following figure might become of use:
+
+![[haar_computation.png]]
+Figure copied from [Wikipedia](https://en.wikipedia.org/wiki/Summed-area_table).
+
+## Part 5: Training an object detector (Optional)
 ---
 The stop-sign model was trained using data from Caltech-101, consisting of 64 training images with bounding box annotations. We'll now try to train our own object detector from the same dataset! The dataset contains 101 annotated object categories each with separate subset sizes, ranging from 40-800 images. You can download the dataset from [here](https://data.caltech.edu/records/mzrjq-6wc02). In order for everything to work as expected, you need to place the root of the Caltech-101 dataset into the **data** folder.
 
 In order to perform this exercise, we highly recommend using the Anaconda Python distribution. Training an object detector using tools provided by OpenCV requires an older version of OpenCV, which can be handled much easier using Anaconda.
 
-### Exercise 16: Setup new virtual environment (Optional)
+### Exercise 21: Setup new virtual environment (Optional)
 We first need to setup a new virtual environment, in order to run the tools we need, which have been disabled for newer versions of OpenCV (>3.4) . To start with, if you're currently in a virtual environment, deactivate by running:
 
 ```bash
@@ -280,9 +320,10 @@ conda create -n obj_train python 'opencv>=3,<4'
 conda activate obj_train
 ```
 
-### Exercise 17: Preprocess data (Optional)
-In order for our data to fit to the semantic notation needed for the OpenCV training tools, we first need to perform some pre-processing on our annotations. To do so, you need to choose **1)** a *positive* class, denoting the class you want your model to detect; and **2)** a set of *negative* images, where the positive class is not present. In the case of the stop-sign model, the chosen positive class was *stop_sign* and the negative images are found using images containing the class *car_side*, as we expect these types of images to be somewhat reminiscent. 
+### Exercise 22: Preprocess data (Optional)
+In order for our data to fit to the semantic notation needed for the OpenCV training tools, we first need to perform some pre-processing on our annotations. To do so, you need to choose **1)** a *positive* class, denoting the class you want your model to detect; and **2)** a *negative* class, where the positive class is not present in the data, with the intention of *regularizing* model training, which helps the model to generalize better to unseen data. A good choice of negative clsas is one, that is similar to the positive class.
 
+In the case of the stop-sign model, the chosen positive class was *stop_sign* whilst the negative class was *car_side*, as we expect these types of images to be somewhat reminiscent. 
 
 Run the following command when at the root of the **process_dataset.py** script:
 
@@ -294,9 +335,11 @@ With *pos_class* and *neg_class* being the explicit names of the categories in t
 
 Having run this script, the description files *pos_class_pos.dat* and *pos_class_neg.dat* should be contained in the Caltech-101 folder along with their gray-scaled datasets in the folders **pos_class_gray** and **neg_class_gray**.
 
-<span style="color:red">Names of .dat files indicate that bounding boxes are actually used?</span>
+**Question 12**: *Try to open the description files and inspect their contents. Can you understand why they deviate from one another and why they're formatted in such a way?*
 
-### Exercise 18: Train object detector (Optional)
+<!-- <span style="color:red">Names of .dat files indicate that bounding boxes are actually used?</span> -->
+
+### Exercise 23: Train object detector (Optional)
 Now we'll commence the training portion of the exercise! To start with, *cd* into the Caltech-101 folder, as the following OpenCV tools only work from the folder where the data resides. We need to create a *positive vector file*, which provides the path from the positive images to the positive description file. This can be done as follows:
 
 ```bash
@@ -316,17 +359,6 @@ Here, the width and height arguments are the same that you used in the last comm
 After running the above, you should have a working Viola Jones object detection model! The model is named *cascade.xml* and is located in the folder **my_detector**.
 
 Now, you're able to evaluate the performance of your own detector! Try to retrieve some images and videos from e.g. [Google.com](https://www.google.com/) or [Pexels.com](https://www.pexels.com/) and run the model evaluation script to see if it performs well, even when trained on so little data.
-
-## Exercise 19: Fusing multiple detections (Optional) 
----
-In this exercise, we will showcase how multiple bounding boxes are fused as according to the Viola Jones paper, page 7. Open script ex_19_bounding_box_fusing.py. Here, we have an image with three example detections. 
-
-The script shows a pipeline which visualizes all detections before fusing bounding boxes. Followingly it checks for each bounding box whether it overlaps with another bounding box. In reality, more than two bounding boxes could overlap, but we will just work with this simple case. 
-
-Your task is to:
-1.  Implement the overlap-detection function to check whether two bounding boxes overlap. The function should return True if bounding boxes overlap, else False. 
-2.  Implement the missing line which calculates the mean bounding box   
-
 
 # References
 ---
