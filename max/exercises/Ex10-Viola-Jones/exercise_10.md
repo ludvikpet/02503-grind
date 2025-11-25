@@ -333,18 +333,20 @@ python process_dataset.py --pos <pos_class> --neg <neg_class>
 
 With *pos_class* and *neg_class* being the explicit names of the categories in the Caltech-101 dataset.
 
-Having run this script, the description files *pos_class_pos.dat* and *pos_class_neg.dat* should be contained in the Caltech-101 folder along with their gray-scaled datasets in the folders **pos_class_gray** and **neg_class_gray**.
+Having run this script, the data files *pos_class_pos.dat* and *pos_class_neg.dat* should be contained in the Caltech-101 folder along with their gray-scaled datasets in the folders **pos_class_gray** and **neg_class_gray**.
 
 **Question 12**: *Try to open the description files and inspect their contents. Can you understand why they deviate from one another and why they're formatted in such a way?*
 
 <!-- <span style="color:red">Names of .dat files indicate that bounding boxes are actually used?</span> -->
 
 ### Exercise 23: Train object detector (Optional)
-Now we'll commence the training portion of the exercise! To start with, *cd* into the Caltech-101 folder, as the following OpenCV tools only work from the folder where the data resides. We need to create a *positive vector file*, which provides the path from the positive images to the positive description file. This can be done as follows:
+Now we'll commence the training portion of the exercise! To start with, *cd* into the Caltech-101 folder, as the following OpenCV tools only work from the folder where the data resides. We first need to create positive samples, which define what the model should look for when trying to find the object of interest. This will be handled by the OpenCV create_samples CLI tool, which creates a *positive vector file* holding the positive samples. This can be done as follows:
 
 ```bash
 opencv_createsamples -info <pos_class>_pos.dat -vec positive.vec -w <width> -h <height>
 ```
+
+**Note:** You may need to set an optional flag *-num N*, where N is the number of samples to generate. By default 1000 samples are created, however, if the number of bounding boxes in your dataset exeeds this amount, then you'll be prompted by an error.
 
 Where the *-w* and *-h* parameters specify the width and height respectfully for the window size. From this, the file *positive.vec* should exist in your current working directory.
 
