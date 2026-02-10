@@ -70,7 +70,7 @@ datasets/**/*.mp4
 **/.ipynb_checkpoints/
 
 # Ignore solutions
-solutions/*
+# solutions/*
 lud/exercises/ex8-CatsCatsCats/data/*
 lud/exercises/ex8-CatsCatsCats/training_data/*
 
@@ -78,3 +78,5 @@ datasets/caltech-101/*
 datasets/annotated_dir/*
 !max/exercises/Ex10-Viola-Jones/data/*
 
+lud/exams/
+lud/extras/*.mp4

@@ -48,22 +48,22 @@ spleen_mask = spleen_roi > 0
 spleen_values =train_CT_img[spleen_mask]
 
 def ex2():
-    print(f'Mean: {train_CT_img.mean()}, std: {train_CT_img.std()}')
-    print(f'*Masked image* Mean: {spleen_values.mean()}, std: {spleen_values.std()}')
-    # Ex2: Don't match, which makes sense, as train_CT_img takes bone and bg into account.
-    # Mean of 50 and std=15 matches with hypothesis of spleen in region (0,150), as (50-3*std, 50-3*std) = (5, 95)
+print(f'Mean: {train_CT_img.mean()}, std: {train_CT_img.std()}')
+print(f'*Masked image* Mean: {spleen_values.mean()}, std: {spleen_values.std()}')
+# Ex2: Don't match, which makes sense, as train_CT_img takes bone and bg into account.
+# Mean of 50 and std=15 matches with hypothesis of spleen in region (0,150), as (50-3*std, 50-3*std) = (5, 95)
 # ex2()
 
 def ex3():
-    plt.hist(spleen_values.ravel(), bins=256)
-    plt.show()
-        # Spleen is normally distributed
+plt.hist(spleen_values.ravel(), bins=256)
+plt.show()
+    # Spleen is normally distributed
 # ex3()
 
 def plot_hist_dist(values, ax, anatomic_class:str=""):
-    mu, std = values.mean(), values.std()
-    n, bins, patches = ax.hist(values, 60, density=1)
-    pdf_spleen = norm.pdf(bins, mu, std)
+mu, std = values.mean(), values.std()
+n, bins, patches = ax.hist(values, 60, density=1)
+pdf_spleen = norm.pdf(bins, mu, std)
     ax.plot(bins, pdf_spleen)
     ax.set_xlabel('Hounsfield unit')
     ax.set_ylabel('Frequency')
